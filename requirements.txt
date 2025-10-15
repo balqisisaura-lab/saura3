@@ -1,6 +1,7 @@
+python_version==3.10
+ultralytics==8.1.0
+tensorflow==2.15.0
+opencv-python-headless==4.9.0.80
+pillow
 streamlit
-ultralytics==8.0.196
-opencv-python-headless==4.8.0.74
-Pillow
-matplotlib
 numpy
