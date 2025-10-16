@@ -15,7 +15,7 @@ def load_models():
     yolo_model = YOLO("model/Balqis Isaura_Laporan 4.pt")
 
     # Load model klasifikasi (Keras .h5)
-    classifier = tf.keras.models.load_model("model/Balqis Isaura_Laporan2.h5")
+    classifier = tf.keras.models.load_model("model/Balqis Isaura_Laporan2.keras")
     return yolo_model, classifier
 
 
