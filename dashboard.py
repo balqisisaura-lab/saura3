@@ -8,53 +8,43 @@ from PIL import Image
 # ==========================
 @st.cache_resource
 def load_cnn_model():
-    model = tf.keras.models.load_model("model/Balqis_isaura_Laporan2.keras")  # pastikan path benar
+    model = tf.keras.models.load_model("model/Balqis_isaura_Laporan2.keras")
     return model
 
 model = load_cnn_model()
 
-st.title("🧠 Web Klasifikasi Gambar CNN (Keras)")
-st.write("✅ Model loaded successfully!")
-st.write("Input shape:", model.input_shape)
-st.write("Output shape:", model.output_shape)
+# ==========================
+# Label kelas (ubah sesuai model kamu)
+# ==========================
+CLASS_NAMES = ['Kelas1', 'Kelas2', 'Kelas3']  # ganti sesuai kelas aslimu
 
 # ==========================
-# Upload Gambar
+# Fungsi Prediksi
 # ==========================
-uploaded_file = st.file_uploader("📤 Upload gambar (jpg/png)", type=["jpg", "jpeg", "png"])
+def predict_image(image):
+    img = image.resize((224, 224))  # sesuaikan dengan ukuran input model kamu
+    img_array = tf.keras.preprocessing.image.img_to_array(img)
+    img_array = np.expand_dims(img_array, axis=0)
+    img_array = tf.keras.applications.resnet50.preprocess_input(img_array)
+
+    predictions = model.predict(img_array)
+    class_idx = np.argmax(predictions, axis=1)[0]
+    confidence = np.max(predictions)
+    return CLASS_NAMES[class_idx], confidence
+
+# ==========================
+# Streamlit UI
+# ==========================
+st.title("🧠 Image Classification Web App")
+st.write("Upload gambar untuk diklasifikasikan menggunakan model CNN kamu!")
+
+uploaded_file = st.file_uploader("Pilih gambar...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    img = Image.open(uploaded_file).convert("RGB")
-    st.image(img, caption="Gambar diunggah", use_column_width=True)
+    image = Image.open(uploaded_file).convert("RGB")
+    st.image(image, caption="Gambar yang diunggah", use_column_width=True)
 
-    # ==========================
-    # Preprocessing
-    # ==========================
-    st.write("🔄 Memproses gambar...")
-
-    # Ubah ukuran sesuai input model
-    img_resized = img.resize((224, 224))
-    img_array = np.array(img_resized).astype("float32") / 255.0
-
-    # Pastikan bentuk (1, 224, 224, 3)
-    img_array = np.expand_dims(img_array, axis=0)
-
-    st.write("Bentuk array sebelum prediksi:", img_array.shape)
-
-    # ==========================
-    # Prediksi
-    # ==========================
-    try:
-        prediction = model.predict(img_array)
-        st.write("📊 Hasil prediksi mentah:", prediction)
-
-        # Tentukan label kelas
-        class_labels = ["Kelas 1", "Kelas 2", "Kelas 3"]  # ganti sesuai label kamu
-        predicted_index = int(np.argmax(prediction))
-        predicted_label = class_labels[predicted_index]
-        confidence = float(np.max(prediction)) * 100
-
-        st.success(f"✅ Prediksi: **{predicted_label}** ({confidence:.2f}%)")
-
-    except Exception as e:
-        st.error(f"❌ Terjadi error saat prediksi: {e}")
+    if st.button("Prediksi Gambar"):
+        with st.spinner("Sedang memproses..."):
+            label, confidence = predict_image(image)
+        st.success(f"Hasil Prediksi: **{label}** ({confidence*100:.2f}% yakin)")
