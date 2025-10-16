@@ -11,7 +11,7 @@ import tensorflow as tf
 @st.cache_resource
 def load_models():
     # Load YOLO (model .pt)
-    yolo_model = YOLO("model/object.pt")
+    yolo_model = YOLO("model/Balqis Isaura_Laporan 4.pt")
 
     # Load CNN (model .h5 atau .keras)
     keras_model = tf.keras.models.load_model("model/Balqis_isaura_Laporan2.keras")
