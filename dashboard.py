@@ -1,57 +1,61 @@
 import streamlit as st
-import numpy as np
-import torch
-from ultralytics import YOLO
-from PIL import Image
 import tensorflow as tf
+from tensorflow.keras.preprocessing import image
+import numpy as np
+from PIL import Image
 
 # ==========================
-# Load Models
+# Load Model CNN
 # ==========================
 @st.cache_resource
-def load_models():
-    # Load YOLO (model .pt)
-    yolo_model = YOLO("model/Balqis Isaura_Laporan 4.pt")
+def load_cnn_model():
+    model = tf.keras.models.load_model("model/Balqis_isaura_Laporan2.keras")  # ganti sesuai nama file kamu
+    return model
 
-    # Load CNN (model .h5 atau .keras)
-    keras_model = tf.keras.models.load_model("model/Balqis_isaura_Laporan2.keras")
+model = load_cnn_model()
 
-    return yolo_model, keras_model
-
-yolo_model, keras_model = load_models()
+# Tampilkan info model
+st.title("🧠 Web Klasifikasi Gambar dengan CNN (Keras)")
+st.write("Model input shape:", model.input_shape)
+st.write("Model output shape:", model.output_shape)
 
 # ==========================
-# UI Streamlit
+# Upload Gambar
 # ==========================
-st.title("🖼️ Web Deteksi Gambar CNN & YOLO")
-st.write("Upload gambar untuk dideteksi menggunakan model deep learning!")
-
-uploaded_file = st.file_uploader("Pilih gambar...", type=["jpg", "jpeg", "png", "webp"])
+uploaded_file = st.file_uploader("📤 Upload Gambar untuk Diklasifikasi", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    image = Image.open(uploaded_file).convert("RGB")
-    st.image(image, caption="Gambar yang diunggah", use_container_width=True)
+    img = Image.open(uploaded_file).convert("RGB")
+    st.image(img, caption="Gambar yang diunggah", use_column_width=True)
 
     # ==========================
-    # Prediksi dengan CNN (Keras)
+    # Preprocessing Gambar
     # ==========================
-    st.subheader("🔹 Hasil Klasifikasi CNN (Keras)")
+    st.write("🔄 Memproses gambar...")
 
-    img_resized = image.resize((224, 224))
-    img_array = np.array(img_resized) / 255.0
-    img_array = np.expand_dims(img_array, axis=0)
+    img_resized = img.resize((224, 224))  # ganti sesuai input model kamu
+    img_array = np.array(img_resized) / 255.0  # normalisasi
+    img_array = np.expand_dims(img_array, axis=0)  # jadi (1, 224, 224, 3)
 
-    pred = keras_model.predict(img_array)
-    class_names = ["Kelas 0", "Kelas 1", "Kelas 2"]  # ubah sesuai label kamu
-    pred_idx = np.argmax(pred)
-    confidence = np.max(pred) * 100
-
-    st.write(f"**Prediksi:** {class_names[pred_idx]} ({confidence:.2f}%)")
+    st.write(f"✅ Bentuk array sebelum prediksi: {img_array.shape}")
 
     # ==========================
-    # Prediksi dengan YOLO (PyTorch)
+    # Prediksi
     # ==========================
-    st.subheader("🔹 Deteksi Objek (YOLO .pt)")
-    results = yolo_model(image)
-    results_img = results[0].plot()  # hasil gambar dengan bounding box
-    st.image(results_img, caption="Hasil Deteksi YOLO", use_container_width=True)
+    st.write("🔍 Melakukan prediksi...")
+    prediction = model.predict(img_array)
+
+    st.write("📊 Hasil prediksi mentah:")
+    st.write(prediction)
+
+    # ==========================
+    # Interpretasi Hasil
+    # ==========================
+    # Ganti label sesuai jumlah kelas kamu
+    class_labels = ["Kelas 1", "Kelas 2", "Kelas 3"]  
+
+    predicted_index = np.argmax(prediction)
+    predicted_label = class_labels[predicted_index]
+    confidence = np.max(prediction) * 100
+
+    st.success(f"✅ Prediksi: **{predicted_label}** ({confidence:.2f}%)")
