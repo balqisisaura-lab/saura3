@@ -11,10 +11,15 @@ import cv2
 # ==========================
 @st.cache_resource
 def load_models():
-    yolo_model = YOLO("model/Balqis Isaura_Laporan 4.pt")  # Model deteksi objek
-    classifier = tf.keras.models.load_model("model/Balqis Isaura_Laporan2.h5")  # Model klasifikasi
+    # Load model YOLO (deteksi objek)
+    yolo_model = YOLO("model/Balqis Isaura_Laporan 4.pt")
+
+    # Load model klasifikasi (Keras .h5)
+    classifier = tf.keras.models.load_model("model/Balqis Isaura_Laporan2.h5")
     return yolo_model, classifier
 
+
+# Panggil kedua model
 yolo_model, classifier = load_models()
 
 # ==========================
@@ -27,24 +32,44 @@ menu = st.sidebar.selectbox("Pilih Mode:", ["Deteksi Objek (YOLO)", "Klasifikasi
 uploaded_file = st.file_uploader("Unggah Gambar", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    img = Image.open(uploaded_file)
+    # Buka gambar
+    img = Image.open(uploaded_file).convert("RGB")
     st.image(img, caption="Gambar yang Diupload", use_container_width=True)
 
+    # ==========================
+    # MODE YOLO
+    # ==========================
     if menu == "Deteksi Objek (YOLO)":
-        # Deteksi objek
+        st.write("### 🔍 Proses Deteksi Objek...")
         results = yolo_model(img)
-        result_img = results[0].plot()  # hasil deteksi (gambar dengan box)
+        result_img = results[0].plot()  # hasil deteksi (gambar dengan bounding box)
         st.image(result_img, caption="Hasil Deteksi", use_container_width=True)
 
+    # ==========================
+    # MODE KLASIFIKASI
+    # ==========================
     elif menu == "Klasifikasi Gambar":
-        # Preprocessing
-        img_resized = img.resize((224, 224))  # sesuaikan ukuran dengan model kamu
-        img_array = image.img_to_array(img_resized)
-        img_array = np.expand_dims(img_array, axis=0)
-        img_array = img_array / 255.0
+        st.write("### 🧩 Proses Klasifikasi...")
 
-        # Prediksi
-        prediction = classifier.predict(img_array)
-        class_index = np.argmax(prediction)
-        st.write("### Hasil Prediksi:", class_index)
-        st.write("Probabilitas:", np.max(prediction))
+        # ---- Preprocessing ----
+        img_resized = img.resize((224, 224))  # sesuaikan dengan ukuran input model kamu
+        img_array = np.array(img_resized)  # pastikan bentuknya array numpy
+        img_array = img_array.astype("float32") / 255.0  # normalisasi piksel
+        img_array = np.expand_dims(img_array, axis=0)  # tambah dimensi batch
+
+        # Debug info (opsional)
+        st.write("Tipe data img_array:", type(img_array))
+        st.write("Bentuk img_array:", img_array.shape)
+        st.write("Tipe elemen:", img_array.dtype)
+
+        # ---- Prediksi ----
+        try:
+            prediction = classifier.predict(img_array)
+            class_index = int(np.argmax(prediction))
+            confidence = float(np.max(prediction))
+
+            st.success(f"### ✅ Hasil Prediksi: {class_index}")
+            st.info(f"Probabilitas: {confidence:.4f}")
+
+        except Exception as e:
+            st.error(f"Terjadi error saat prediksi: {e}")
